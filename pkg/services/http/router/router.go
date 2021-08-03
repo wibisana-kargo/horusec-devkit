@@ -18,6 +18,7 @@ import (
 	"compress/flate"
 	"fmt"
 	"github.com/ZupIT/horusec-devkit/pkg/services/tracer"
+	"github.com/opentracing/opentracing-go"
 	"net/http"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httptracer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ZupIT/horusec-devkit/pkg/services/http/router/enums"
@@ -86,6 +88,7 @@ func (r *Router) ListenAndServe() {
 			}
 		}()
 	}
+	r.enableTrace()
 	logger.LogInfo(fmt.Sprintf(enums.MessageServiceRunningOnPort, r.port))
 	logger.LogPanic(enums.MessageListenAndServeError, http.ListenAndServe(fmt.Sprintf(":%s", r.port), r.router))
 }
@@ -140,4 +143,12 @@ func (r *Router) routeMetrics() {
 
 func (r *Router) getCorsHandler(next http.Handler) http.Handler {
 	return cors.New(*r.corsOptions).Handler(next)
+}
+
+func (r *Router) enableTrace() {
+	r.router.Use(httptracer.Tracer(opentracing.GlobalTracer(), httptracer.Config{
+		ServiceName:    r.serviceName,
+		ServiceVersion: "",
+		SampleRate:     1,
+	}))
 }
