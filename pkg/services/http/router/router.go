@@ -17,18 +17,19 @@ package router
 import (
 	"compress/flate"
 	"fmt"
-	"github.com/ZupIT/horusec-devkit/pkg/services/tracer"
-	"github.com/opentracing/opentracing-go"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/opentracing/opentracing-go"
+
+	"github.com/ZupIT/horusec-devkit/pkg/services/tracer"
 
 	"github.com/ZupIT/horusec-devkit/pkg/enums/ozzovalidation"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/go-chi/httptracer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ZupIT/horusec-devkit/pkg/services/http/router/enums"
@@ -138,10 +139,5 @@ func (r *Router) getCorsHandler(next http.Handler) http.Handler {
 }
 
 func (r *Router) enableTrace() {
-	r.router.Use(httptracer.Tracer(opentracing.GlobalTracer(), httptracer.Config{
-		ServiceName:    r.jaeger.Name,
-		ServiceVersion: "",
-		OperationName:  "http.request",
-		SampleRate:     1,
-	}))
+	r.router.Use(tracer.Tracer(opentracing.GlobalTracer()))
 }
