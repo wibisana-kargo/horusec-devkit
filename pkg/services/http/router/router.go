@@ -96,8 +96,8 @@ func (r *Router) setRouterConfig() *Router {
 	r.enableCompress()
 	r.enableRequestID()
 	r.enableCORS()
-	r.routeMetrics()
 	r.enableTrace()
+	r.routeMetrics()
 	return r
 }
 
