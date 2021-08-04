@@ -41,7 +41,7 @@ type IRouter interface {
 	GetPort() string
 	GetMux() *chi.Mux
 	Route(pattern string, fn func(router chi.Router)) chi.Router
-	setJaeger(serviceName string, logError, logInfo bool) io.Closer
+	setJaeger() (io.Closer, error)
 }
 
 type Router struct {
@@ -50,30 +50,26 @@ type Router struct {
 	corsOptions *cors.Options
 	router      *chi.Mux
 	jaeger      tracer.Jaeger
-	serviceName string
 }
 
-func NewHTTPRouter(corsOptions *cors.Options, defaultPort, serviceName string) IRouter {
+func NewHTTPRouter(corsOptions *cors.Options, defaultPort string, jaeger tracer.Jaeger) IRouter {
 	router := &Router{
 		port:        env.GetEnvOrDefault(enums.HorusecPort, defaultPort),
 		timeout:     time.Duration(env.GetEnvOrDefaultInt(enums.HorusecRouterTimeout, ozzovalidation.Length10)) * time.Second,
 		corsOptions: corsOptions,
 		router:      chi.NewRouter(),
+		jaeger:      jaeger,
 	}
-	router.setJaeger(serviceName, true, true)
+	_, _ = router.setJaeger()
 	return router.setRouterConfig()
 }
-func (r *Router) setJaeger(serviceName string, logError, logInfo bool) io.Closer {
-	r.jaeger = tracer.Jaeger{
-		Name:     serviceName,
-		LogError: logError,
-		LogInfo:  logInfo,
-	}
+func (r *Router) setJaeger() (io.Closer, error) {
 	jaegerCloser, err := r.jaeger.Config()
 	if err != nil {
 		logger.LogError(enums.ErrorWithJaeger, err)
+		return nil, err
 	}
-	return jaegerCloser
+	return jaegerCloser, nil
 }
 func (r *Router) GetMux() *chi.Mux {
 	return r.router
@@ -143,7 +139,7 @@ func (r *Router) getCorsHandler(next http.Handler) http.Handler {
 
 func (r *Router) enableTrace() {
 	r.router.Use(httptracer.Tracer(opentracing.GlobalTracer(), httptracer.Config{
-		ServiceName:    r.serviceName,
+		ServiceName:    r.jaeger.Name,
 		ServiceVersion: "",
 		OperationName:  "http.request",
 		SampleRate:     1,
