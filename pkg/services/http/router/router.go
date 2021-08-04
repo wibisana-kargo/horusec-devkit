@@ -149,6 +149,7 @@ func (r *Router) enableTrace() {
 	r.router.Use(httptracer.Tracer(opentracing.GlobalTracer(), httptracer.Config{
 		ServiceName:    r.serviceName,
 		ServiceVersion: "",
+		OperationName:  "http.request",
 		SampleRate:     1,
 	}))
 }
