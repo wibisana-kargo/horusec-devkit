@@ -9,6 +9,7 @@ require (
 	github.com/auth0/go-jwt-middleware v1.0.1
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-chi/chi/v5 v5.0.0
 	github.com/go-chi/cors v1.2.0
 	github.com/go-chi/httptracer v0.3.0
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
