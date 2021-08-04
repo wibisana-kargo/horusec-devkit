@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/ZupIT/horusec-devkit/pkg/services/tracer"
 	"github.com/opentracing/opentracing-go"
+	"io"
 	"net/http"
 	"time"
 
@@ -40,7 +41,7 @@ type IRouter interface {
 	GetPort() string
 	GetMux() *chi.Mux
 	Route(pattern string, fn func(router chi.Router)) chi.Router
-	SetJaeger(serviceName string, logError, logInfo bool)
+	SetJaeger(serviceName string, logError, logInfo bool) io.Closer
 }
 
 type Router struct {
@@ -62,12 +63,18 @@ func NewHTTPRouter(corsOptions *cors.Options, defaultPort string) IRouter {
 
 	return router.setRouterConfig()
 }
-func (r *Router) SetJaeger(serviceName string, logError, logInfo bool) {
+func (r *Router) SetJaeger(serviceName string, logError, logInfo bool) io.Closer {
 	r.jaeger = tracer.Jaeger{
 		Name:     serviceName,
 		LogError: logError,
 		LogInfo:  logInfo,
 	}
+	jaegerCloser, err := r.jaeger.Config()
+	if err != nil {
+		logger.LogError(enums.ErrorWithJaeger, err)
+	}
+	r.enableTrace()
+	return jaegerCloser
 }
 func (r *Router) GetMux() *chi.Mux {
 	return r.router
@@ -78,17 +85,6 @@ func (r *Router) Route(pattern string, fn func(router chi.Router)) chi.Router {
 }
 
 func (r *Router) ListenAndServe() {
-	jaegerCloser, err := r.jaeger.Config()
-	if err != nil {
-		logger.LogError(enums.ErrorWithJaeger, err)
-	} else {
-		defer func() {
-			if err := jaegerCloser.Close(); err != nil {
-				logger.LogPanic(enums.ErrorWithJaeger, err)
-			}
-		}()
-	}
-	r.enableTrace()
 	logger.LogInfo(fmt.Sprintf(enums.MessageServiceRunningOnPort, r.port))
 	logger.LogPanic(enums.MessageListenAndServeError, http.ListenAndServe(fmt.Sprintf(":%s", r.port), r.router))
 }
