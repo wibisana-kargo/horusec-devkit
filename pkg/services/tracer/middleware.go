@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 )
@@ -49,22 +48,22 @@ func Tracer(tr opentracing.Tracer) func(next http.Handler) http.Handler {
 			span.SetTag("resource.name", resourceName)
 
 			// pass the span through the request context and serve the request to the next middleware
-			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-			next.ServeHTTP(ww, r.WithContext(traceCtx))
+			//ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			next.ServeHTTP(w, r.WithContext(traceCtx))
 
 			// set the status code
-			status := ww.Status()
-			ext.HTTPStatusCode.Set(span, uint16(status))
-
-			if status >= 500 && status < 600 {
-				// mark 5xx server error
-				ext.Error.Set(span, true)
-				span.SetTag("error.type", fmt.Sprintf("%d: %s", status, http.StatusText(status)))
-				span.LogKV(
-					"event", "error",
-					"message", fmt.Sprintf("%d: %s", status, http.StatusText(status)),
-				)
-			}
+			//status := ww.Status()
+			//ext.HTTPStatusCode.Set(span, uint16(status))
+			//
+			//if status >= 500 && status < 600 {
+			//	// mark 5xx server error
+			//	ext.Error.Set(span, true)
+			//	span.SetTag("error.type", fmt.Sprintf("%d: %s", status, http.StatusText(status)))
+			//	span.LogKV(
+			//		"event", "error",
+			//		"message", fmt.Sprintf("%d: %s", status, http.StatusText(status)),
+			//	)
+			//}
 			//TODO: to be decided
 			//if status >= 400 && status < 500 {
 			//	// mark 4xx server error
